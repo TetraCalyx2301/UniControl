@@ -1,10 +1,6 @@
-<div align="center">
-
-<img src="src/assets/icon.png" alt="UniControl Logo" width="128" height="128" style="margin-bottom: 14px;" />
-
 # UniControl
 
-### 聚合外设中控与跨屏协同平台 · Unified Peripheral & Workspace Hub![image-20261020125508054](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20261020125508054.png)
+### ![image-20261020125508054](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20261020125508054.png)
 
 
 

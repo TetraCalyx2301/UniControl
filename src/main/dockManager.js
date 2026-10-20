@@ -100,7 +100,7 @@ class DockManager {
       const w = Math.round(bounds.width * scale);
       const h = Math.round((bounds.height - tbH) * scale);
 
-      execFile(this.oppoDockTool, [parentHWnd, 'resize', String(x), String(y), String(w), String(h)], (err) => {
+      execFile(this.oppoDockTool, [parentHWnd, 'resize', String(x), String(y), String(w), String(h)], { timeout: 3000 }, (err) => {
         if (err) console.error('[Oppo resize error]', err);
       });
     }, 50);
@@ -117,10 +117,10 @@ class DockManager {
     const h = Math.round((b.height || (874)) * scale);
 
     return new Promise((resolve) => {
-      execFile(this.oppoDockTool, [parentHWnd, 'dock', String(x), String(y), String(w), String(h)], (err, stdout, stderr) => {
+      execFile(this.oppoDockTool, [parentHWnd, 'dock', String(x), String(y), String(w), String(h)], { timeout: 3000 }, (err, stdout, stderr) => {
         if (err) {
           console.error('[OppoDockTool dock error]', err, stderr);
-          return resolve({ success: false, error: err.message });
+          return resolve({ success: false, error: err.code === 'ETIMEDOUT' ? '窗口嵌入操作超时' : err.message });
         }
         console.log('[OppoDockTool dock result]:', stdout.trim());
         this.isOppoDocked = stdout.includes('DOCKED_SUCCESS');
@@ -134,10 +134,10 @@ class DockManager {
     const parentHWnd = this.getNativeHandle();
 
     return new Promise((resolve) => {
-      execFile(this.oppoDockTool, [parentHWnd, 'undock'], (err) => {
+      execFile(this.oppoDockTool, [parentHWnd, 'undock'], { timeout: 3000 }, (err) => {
         this.isOppoDocked = false;
         if (err) {
-          return resolve({ success: false, error: err.message });
+          return resolve({ success: false, error: err.code === 'ETIMEDOUT' ? '窗口解除嵌入超时' : err.message });
         }
         resolve({ success: true });
       });

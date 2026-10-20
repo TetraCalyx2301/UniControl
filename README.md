@@ -4,11 +4,9 @@
 
 # UniControl
 
-### 聚合外设中控与跨屏协同平台 · Unified Peripheral & Workspace Hub
+### 聚合外设中控与跨屏协同平台 · Unified Peripheral & Workspace Hub![image-20261020125508054](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20261020125508054.png)
 
-*专为迈从 (MCHOSE)、前行者 (EWEADN)、OPPO 随身工作台与飞智 (FLYDIGI) 打造的高颜值 Windows 统一外设工作站*
 
-<br/>
 
 [![Release](https://img.shields.io/badge/Release-v1.0.0-0078D6?style=for-the-badge&logo=github&logoColor=white)](https://github.com)
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011%20(x64)-00a4ef?style=for-the-badge&logo=windows&logoColor=white)](https://github.com)
@@ -40,7 +38,6 @@
 随着现代桌面外设的多样化，机械键盘、轻量化鼠标、专业电竞手柄以及跨屏互联工具往往由不同的品牌硬件厂商提供，长期存在以下痛点：
 - **入口极度割裂**：迈从、前行者等键鼠品牌全面转向了云端网页驱动（WebHID / WebUSB）；飞智游戏手柄依赖独立本地空间站客户端；OPPO 跨屏互联又包含网页端工作台与本地客户端；
 - **系统资源浪费与托盘凌乱**：多套外设后台驱动常驻于系统托盘，进程冗余、内存消耗高且互相切换操作繁琐；
-- **网页驱动体验不佳**：浏览器标签页中开启的外设页面极易被误关闭，无法直接使用鼠标侧键自然回退，且界面无法自适应窗口无级缩放。
 
 ### 2. 解决方案
 **UniControl** 通过 Electron 容器级隔离架构、Win32 原生句柄挂载（SetParent）与 WebHID 直通鉴权，将分散的多生态驱动聚合为一个优雅、高帧率、低功耗的统一控制台。
@@ -53,10 +50,10 @@
 
 | 品牌生态 | 官方徽标 | 设备品类 | 驱动接入方式 | 核心特性支持 |
 | :--- | :---: | :---: | :---: | :--- |
-| **迈从 (MCHOSE)** | <img src="src/assets/mchose-logo.png" width="56" height="56" alt="MCHOSE" /> | 机械键盘 / 电竞鼠标 | `WebHID / WebUSB` | 官方云 Hub 自动授权直通、DPI/按键映射/宏配置、多节点故障智能容错切换 |
-| **前行者 (EWEADN)** | <img src="src/assets/eweadn-logo.png" width="56" height="56" alt="EWEADN" /> | 客制化键盘 / 游戏鼠标 | `WebHID / WebUSB` | 官方灯效管理、板载存储配置、音乐律动同步、双节点自动备用容灾 |
+| **迈从 (MCHOSE)** | <img src="src/assets/mchose-logo.png" width="56" height="56" alt="MCHOSE" /> | 键盘 / 鼠标 | `WebHID / WebUSB` | 官方云 Hub 自动授权直通、DPI/按键映射/宏配置、多节点故障智能容错切换 |
+| **前行者 (EWEADN)** | <img src="src/assets/eweadn-logo.png" width="56" height="56" alt="EWEADN" /> | 键盘 / 鼠标 | `WebHID / WebUSB` | 官方灯效管理、板载存储配置、音乐律动同步、双节点自动备用容灾 |
 | **OPPO 随身工作台** | <img src="src/assets/oppo-logo.png" width="56" height="56" alt="OPPO" /> | 手机 / 平板跨屏互联 | `Win32 Docking / Cloud` | **免安装云端工作台** 与 **本地客户端原生无缝嵌入 (Dock)** 双模自由切换 |
-| **飞智 (FLYDIGI)** | <img src="src/assets/flydigi-logo.png" width="56" height="56" alt="FLYDIGI" /> | 八爪鱼 / 黑武士电竞手柄 | `Smart Path Launcher` | 全局注册表智能探测、UAC 提权容错拉起、托盘静默拉起与后台协同 |
+| **飞智 (FLYDIGI)** | <img src="src/assets/flydigi-logo.png" width="56" height="56" alt="FLYDIGI" /> | 手柄(仅适配黑武士2Pro) | `Smart Path Launcher` | 全局注册表智能探测、UAC 提权容错拉起、托盘静默拉起与后台协同 |
 
 </div>
 
@@ -87,7 +84,7 @@
 - **全局后退分级**：三级确认弹窗 $\rightarrow$ 仅关闭三级返回设置；二级设置面板 $\rightarrow$ 仅关闭设置返回驱动；驱动视口 $\rightarrow$ 网页内后退（无历史记录时平滑返回主页）；
 - **鼠标侧键穿透捕获**：在 Webview 各生命周期动态注入原生事件捕获，结合主进程 `app-command` 广播与 200ms 全局防抖锁，保证侧键、Esc 键与顶栏返回胶囊体验高度统一。
 
-### 6. 🌐 全生态中英双语即时切换 (i18n)
+### 6. 🌐 全生态中英双语即时切换 (
 - 简体中文 (`zh-CN`) 与 English (`en-US`) 一键无缝热切换；
 - 语言状态不仅作用于中控 UI，还会向内置的各官方驱动 Webview 底层同步分发 `localStorage` 语言指令与国际化切换探针。
 
@@ -279,17 +276,6 @@ npm start
 > **双副本机制说明**：
 > 本工程采用「源代码根目录」与「`resources/app` 运行环境」镜像同步机制。双击根目录 `UniControl.exe` 或运行快捷方式时，Electron 默认加载 `resources/app`。
 > 每次修改源码后，仅需运行 `npm run sync` 或执行 `./sync_build.ps1`，脚本将在 **1 秒内** 自动完成全量脚本语法校验、增量文件同步与运行副本二次验证。
-
----
-
-## 📦 打包与安装包制作
-
-项目已配备针对 Windows 平台深度优化的 **Inno Setup** 打包配置：[`UniControl_Setup.iss`](UniControl_Setup.iss)。
-
-1. 下载并安装 [Inno Setup 6.0+](https://jrsoftware.org/isdl.php)；
-2. 鼠标右键打开 `UniControl_Setup.iss`，点击 **Compile**；
-3. 编译器将自动生成单文件独立安装包：`UniControl_Setup_v1.0.0.exe`；
-4. 脚本采用动态相对路径与条件宏设计（`#if DirExists`），无论是否捆绑本地 OPPO 客户端均能一次性无错编译成功。
 
 ---
 

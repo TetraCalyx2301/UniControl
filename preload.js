@@ -59,5 +59,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const handler = () => callback();
     ipcRenderer.on('nav:mouse-forward', handler);
     return () => ipcRenderer.removeListener('nav:mouse-forward', handler);
+  },
+  onSystemResume: (callback) => {
+    const handler = () => callback();
+    ipcRenderer.on('app:system-resume', handler);
+    return () => ipcRenderer.removeListener('app:system-resume', handler);
   }
 });

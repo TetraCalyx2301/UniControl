@@ -31,17 +31,33 @@ class AppLauncher {
     }
   }
 
+  static _findInstallFromRegistry(subKey) {
+    const roots = [
+      'HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
+      'HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
+      'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall'
+    ];
+    for (const r of roots) {
+      const loc = AppLauncher._readRegistry(`${r}\\${subKey}`, 'InstallLocation');
+      if (loc && fs.existsSync(loc)) return loc;
+      const uninstallStr = AppLauncher._readRegistry(`${r}\\${subKey}`, 'UninstallString');
+      if (uninstallStr) {
+        const clean = uninstallStr.replace(/^["']|["']$/g, '').trim();
+        const dir = path.dirname(clean);
+        if (fs.existsSync(dir)) return dir;
+      }
+    }
+    return null;
+  }
+
   static getOppoCandidates(customPath, appPath, resourcesPath) {
     const pf = process.env.ProgramFiles || 'C:\\Program Files';
     const pf86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
     const localAppData = process.env.LOCALAPPDATA || '';
     const appData = process.env.APPDATA || '';
 
-    // 注册表探测（O+Connect 常见卸载键）
-    const regPath = AppLauncher._readRegistry(
-      'HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\O+Connect',
-      'InstallLocation'
-    );
+    // 注册表多根多版本智能探测（O+Connect 常见键）
+    const regPath = AppLauncher._findInstallFromRegistry('O+Connect');
 
     return [
       // 1. 用户自定义路径（最高优先级）
@@ -66,11 +82,8 @@ class AppLauncher {
     const pf86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
     const localAppData = process.env.LOCALAPPDATA || '';
 
-    // 注册表探测（FlydigiPcSpace 常见安装键）
-    const regPath = AppLauncher._readRegistry(
-      'HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\FlydigiPcSpace',
-      'InstallLocation'
-    );
+    // 注册表多根多版本智能探测（FlydigiPcSpace 常见键）
+    const regPath = AppLauncher._findInstallFromRegistry('FlydigiPcSpace');
 
     return [
       // 1. 用户自定义路径
@@ -97,13 +110,27 @@ class AppLauncher {
     return null;
   }
 
-  static launch(executablePath) {
+  static async launch(executablePath) {
     if (!executablePath || !fs.existsSync(executablePath)) {
       return { success: false, error: 'NOT_INSTALLED' };
     }
 
-    const targetDir = path.dirname(executablePath);
     try {
+      // 优先使用 Electron shell.openPath：由 Windows Shell 处理 UAC 提权提示，避免 740 ERROR_ELEVATION_REQUIRED 崩溃
+      let shellModule = null;
+      try {
+        shellModule = require('electron').shell;
+      } catch (_) {}
+
+      if (shellModule && typeof shellModule.openPath === 'function') {
+        const errorMsg = await shellModule.openPath(executablePath);
+        if (!errorMsg) {
+          return { success: true, path: executablePath };
+        }
+        console.warn(`[AppLauncher] shell.openPath note: ${errorMsg}, attempting spawn fallback...`);
+      }
+
+      const targetDir = path.dirname(executablePath);
       const child = spawn(executablePath, [], {
         detached: true,
         stdio: 'ignore',

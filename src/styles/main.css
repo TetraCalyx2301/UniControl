@@ -1847,6 +1847,9 @@ body {
 .settings-modal-card {
   width: 90%;
   max-width: 520px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
   background: var(--bg-card);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -1928,6 +1931,18 @@ body {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  overflow-y: auto;
+  max-height: calc(88vh - 90px);
+  padding-right: 4px;
+}
+
+.settings-modal-body::-webkit-scrollbar {
+  width: 5px;
+}
+
+.settings-modal-body::-webkit-scrollbar-thumb {
+  background: rgba(150, 150, 160, 0.25);
+  border-radius: 4px;
 }
 
 .setting-item {

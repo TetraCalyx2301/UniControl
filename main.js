@@ -3,7 +3,7 @@
  * Unified peripheral control center for MCHOSE, EWEADN, OPPO Connect, and FLYDIGI.
  */
 
-const { app, BrowserWindow, ipcMain, Menu, Tray, nativeImage, globalShortcut, session, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, Tray, nativeImage, globalShortcut, session, dialog, shell, screen, powerMonitor } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -15,6 +15,22 @@ const AppLauncher = require('./src/main/appLauncher');
 app.setPath('userData', path.join(app.getPath('appData'), 'UniControl_Profile'));
 require('events').EventEmitter.defaultMaxListeners = 50;
 
+// Logging subsystem with rolling file buffer
+const LOG_FILE = path.join(app.getPath('userData'), 'unicontrol.log');
+function logInfo(...args) {
+  const line = `[${new Date().toISOString()}] ${args.join(' ')}\n`;
+  console.log(...args);
+  try {
+    const dir = path.dirname(LOG_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    if (fs.existsSync(LOG_FILE) && fs.statSync(LOG_FILE).size > 512 * 1024) {
+      fs.writeFileSync(LOG_FILE, line, 'utf8');
+    } else {
+      fs.appendFileSync(LOG_FILE, line, 'utf8');
+    }
+  } catch (_) {}
+}
+
 // Enable GPU hardware acceleration flags
 app.commandLine.appendSwitch('enable-gpu-rasterization');
 app.commandLine.appendSwitch('enable-zero-copy');
@@ -24,7 +40,7 @@ app.commandLine.appendSwitch('ignore-gpu-blocklist');
 // Single instance lock
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
-  console.log('[UniControl] Second instance detected, requesting primary to show and exiting...');
+  logInfo('[UniControl] Second instance detected, requesting primary to show and exiting...');
   app.quit();
   process.exit(0);
 }
@@ -54,7 +70,7 @@ function loadMainSettings() {
       };
     }
   } catch (e) {
-    console.warn('[UniControl] Failed to load settings.json, using defaults:', e.message);
+    logInfo('[UniControl] Failed to load settings.json, using defaults:', e.message);
   }
   return { closeToTray: true, wakeShortcut: 'CommandOrControl+Alt+U' };
 }
@@ -69,7 +85,35 @@ function saveMainSettings(updates) {
     }
     fs.writeFileSync(SETTINGS_PATH, JSON.stringify({ ...current, ...updates }, null, 2), 'utf8');
   } catch (e) {
-    console.warn('[UniControl] Failed to save settings.json:', e.message);
+    logInfo('[UniControl] Failed to save settings.json:', e.message);
+  }
+}
+
+function ensureWindowVisible(win) {
+  if (!win || win.isDestroyed()) return;
+  try {
+    const bounds = win.getBounds();
+    const display = screen.getDisplayMatching(bounds);
+    const area = display.workArea;
+    const isOffscreen = (
+      bounds.x + bounds.width < area.x + 100 ||
+      bounds.x > area.x + area.width - 100 ||
+      bounds.y + bounds.height < area.y + 100 ||
+      bounds.y > area.y + area.height - 100
+    );
+    if (isOffscreen) {
+      logInfo('[UniControl] Window position is off-screen, centering window on primary display.');
+      win.center();
+    }
+  } catch (_) {}
+}
+
+function showMainWindow() {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    ensureWindowVisible(mainWindow);
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
   }
 }
 
@@ -86,6 +130,8 @@ function createWindow() {
     const hubPartition = session.fromPartition('persist:unicontrol_profile');
     configurePeripheralSession(hubPartition, () => mainWindow);
 
+    const isHiddenLaunch = process.argv.includes('--hidden');
+
     mainWindow = new BrowserWindow({
       width: 1440,
       height: 920,
@@ -94,7 +140,7 @@ function createWindow() {
       title: 'UniControl - 统一外设控制中心',
       frame: false,
       backgroundColor: '#0a0a0c',
-      show: true,
+      show: false,
       webPreferences: {
         preload: path.join(__dirname, 'preload.js'),
         webviewTag: true,
@@ -108,8 +154,6 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, 'src', 'index.html')).catch(err => {
       console.error('[UniControl] loadFile failed:', err);
     });
-
-    const isHiddenLaunch = process.argv.includes('--hidden');
 
     mainWindow.once('ready-to-show', () => {
       console.log('[UniControl] Window ready to show.');
@@ -205,6 +249,14 @@ function createWindow() {
 
 // Forward mouse navigation from all child WebContents (including webviews)
 app.on('web-contents-created', (event, contents) => {
+  // 【安全加固】拦截所有 Webview 内的 window.open / target="_blank" 外部弹窗，转由系统默认浏览器安全打开
+  contents.setWindowOpenHandler(({ url }) => {
+    if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+      shell.openExternal(url).catch(err => console.warn('[UniControl] Failed to open external URL:', err.message));
+    }
+    return { action: 'deny' };
+  });
+
   contents.on('app-command', (e, cmd) => {
     if (cmd === 'browser-backward') {
       if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('nav:mouse-back');
@@ -245,13 +297,39 @@ function createTray() {
 
     const contextMenu = Menu.buildFromTemplate([
       {
-        label: '打开 UniControl 控制台',
+        label: '打开控制中心 (UniControl)',
         click: () => {
-          if (mainWindow && !mainWindow.isDestroyed()) {
-            if (mainWindow.isMinimized()) mainWindow.restore();
-            mainWindow.show();
-            mainWindow.focus();
-          }
+          showMainWindow();
+          if (mainWindow) mainWindow.webContents.send('nav:switch-view', 'home');
+        }
+      },
+      { type: 'separator' },
+      {
+        label: '迈从驱动中心 (MCHOSE)',
+        click: () => {
+          showMainWindow();
+          if (mainWindow) mainWindow.webContents.send('nav:switch-view', 'mchose');
+        }
+      },
+      {
+        label: '前行者驱动中心 (EWEADN)',
+        click: () => {
+          showMainWindow();
+          if (mainWindow) mainWindow.webContents.send('nav:switch-view', 'eweadn');
+        }
+      },
+      {
+        label: 'OPPO 随身工作台 (O+ Connect)',
+        click: () => {
+          showMainWindow();
+          if (mainWindow) mainWindow.webContents.send('nav:switch-view', 'oppo');
+        }
+      },
+      {
+        label: '飞智 PC 空间站 (FLYDIGI)',
+        click: () => {
+          showMainWindow();
+          if (mainWindow) mainWindow.webContents.send('nav:switch-view', 'flydigi');
         }
       },
       { type: 'separator' },
@@ -271,21 +349,15 @@ function createTray() {
         if (mainWindow.isVisible()) {
           mainWindow.hide();
         } else {
-          if (mainWindow.isMinimized()) mainWindow.restore();
-          mainWindow.show();
-          mainWindow.focus();
+          showMainWindow();
         }
       }
     });
     tray.on('click', () => {
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        if (mainWindow.isMinimized()) mainWindow.restore();
-        mainWindow.show();
-        mainWindow.focus();
-      }
+      showMainWindow();
     });
   } catch (trayErr) {
-    console.warn('[UniControl] Tray warning:', trayErr);
+    logInfo('[UniControl] Tray warning:', trayErr);
   }
 }
 
@@ -304,9 +376,7 @@ function registerGlobalWakeShortcut(newShortcut) {
         if (mainWindow.isVisible() && mainWindow.isFocused()) {
           mainWindow.hide();
         } else {
-          if (mainWindow.isMinimized()) mainWindow.restore();
-          mainWindow.show();
-          mainWindow.focus();
+          showMainWindow();
         }
       }
     });
@@ -321,9 +391,7 @@ function registerGlobalWakeShortcut(newShortcut) {
             if (mainWindow.isVisible() && mainWindow.isFocused()) {
               mainWindow.hide();
             } else {
-              if (mainWindow.isMinimized()) mainWindow.restore();
-              mainWindow.show();
-              mainWindow.focus();
+              showMainWindow();
             }
           }
         });
@@ -464,10 +532,8 @@ ipcMain.handle('app:launch-flydigi', async (event, customPath) => {
 // App lifecycle
 app.on('second-instance', () => {
   if (mainWindow && !mainWindow.isDestroyed()) {
-    if (mainWindow.isMinimized()) mainWindow.restore();
-    mainWindow.show();
+    showMainWindow();
     mainWindow.setAlwaysOnTop(true);
-    mainWindow.focus();
     setTimeout(() => {
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.setAlwaysOnTop(false);
@@ -480,6 +546,16 @@ app.whenReady().then(() => {
   createWindow();
   createTray();
   registerGlobalWakeShortcut(currentShortcut);
+
+  if (powerMonitor) {
+    powerMonitor.on('resume', () => {
+      logInfo('[UniControl] System resumed from sleep, refreshing viewport and dock states...');
+      if (dockManager) dockManager.triggerResize();
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('app:system-resume');
+      }
+    });
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -503,9 +579,9 @@ app.on('window-all-closed', () => {
 });
 
 process.on('uncaughtException', (err) => {
-  console.error('[UniControl] Uncaught Exception:', err);
+  logInfo('[UniControl] Uncaught Exception:', err.stack || err);
 });
 
 process.on('unhandledRejection', (reason) => {
-  console.error('[UniControl] Unhandled Rejection:', reason);
+  logInfo('[UniControl] Unhandled Rejection:', reason);
 });

@@ -46,13 +46,17 @@ Source: "{#UniSourceDir}\*.bin"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#UniSourceDir}\locales\*"; DestDir: "{app}\locales"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#UniSourceDir}\resources\*"; DestDir: "{app}\resources"; Flags: ignoreversion recursesubdirs createallsubdirs
 
-; 2. Bundled OPPO Connect Full Runtime & Application
+; 2. Bundled OPPO Connect Full Runtime & Application (Optional: 存在时自动打包，不存在时安全跳过)
+#if DirExists(OppoSourceDir)
 Source: "{#OppoSourceDir}\*"; DestDir: "{app}\Oppo Connect"; Flags: ignoreversion recursesubdirs createallsubdirs
+#endif
 
 [Icons]
 Name: "{autoprograms}\{#MyAppFullName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{autodesktop}\{#MyAppFullName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+#if DirExists(OppoSourceDir)
 Name: "{autodesktop}\OPPO 跨屏互联"; Filename: "{app}\Oppo Connect\O+Connect.exe"; WorkingDir: "{app}\Oppo Connect"; Tasks: oppoicon
+#endif
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppFullName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent

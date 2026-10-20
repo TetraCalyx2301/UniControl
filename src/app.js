@@ -225,6 +225,15 @@ function applyLanguage(lang, showNotification = false) {
   }
 
   // Update Settings UI text
+  const lblTheme = document.querySelectorAll('.setting-item .setting-label')[0];
+  if (lblTheme) lblTheme.textContent = t.settingTheme;
+  const optSys = document.querySelector('#theme-opt-system span');
+  if (optSys) optSys.textContent = t.themeSystem;
+  const optLight = document.querySelector('#theme-opt-light span');
+  if (optLight) optLight.textContent = t.themeLight;
+  const optDark = document.querySelector('#theme-opt-dark span');
+  if (optDark) optDark.textContent = t.themeDark;
+
   const lblLang = document.getElementById('lbl-setting-lang');
   if (lblLang) lblLang.textContent = t.settingLang;
 
@@ -256,6 +265,31 @@ function applyLanguage(lang, showNotification = false) {
   if (sublblFlydigiPath) sublblFlydigiPath.textContent = t.settingFlydigiPathSub;
 
   document.querySelectorAll('.btn-path-browse span').forEach(el => el.textContent = t.btnBrowse);
+
+  // Home card titles
+  const cardMchoseTitle = document.querySelector('#card-mchose .card-title');
+  if (cardMchoseTitle) cardMchoseTitle.textContent = t.brandMchose;
+  const cardEweadnTitle = document.querySelector('#card-eweadn .card-title');
+  if (cardEweadnTitle) cardEweadnTitle.textContent = t.brandEweadn;
+  const cardFlydigiTitle = document.querySelector('#card-flydigi .card-title');
+  if (cardFlydigiTitle) cardFlydigiTitle.textContent = t.brandFlydigi;
+
+  // Titlebar device name if in device view
+  if (elements.titlebarDeviceName && currentView !== 'home') {
+    if (currentView === 'mchose') elements.titlebarDeviceName.textContent = lang === 'en-US' ? 'MCHOSE' : '迈从';
+    else if (currentView === 'eweadn') elements.titlebarDeviceName.textContent = lang === 'en-US' ? 'EWEADN' : '前行者';
+    else if (currentView === 'oppo') elements.titlebarDeviceName.textContent = 'OPPO';
+  }
+
+  // Fallback error overlays
+  const mchoseFailT = document.querySelector('.i18n-mchose-fail-title');
+  if (mchoseFailT) mchoseFailT.textContent = t.mchoseFailTitle;
+  const mchoseFailD = document.querySelector('.i18n-mchose-fail-desc');
+  if (mchoseFailD) mchoseFailD.textContent = t.mchoseFailDesc;
+  const eweadnFailT = document.querySelector('.i18n-eweadn-fail-title');
+  if (eweadnFailT) eweadnFailT.textContent = t.eweadnFailTitle;
+  const eweadnFailD = document.querySelector('.i18n-eweadn-fail-desc');
+  if (eweadnFailD) eweadnFailD.textContent = t.eweadnFailDesc;
 
   // Floating button labels
   document.querySelectorAll('.i18n-back').forEach(el => el.textContent = t.back);
@@ -572,13 +606,13 @@ function openDevice(brand, mode) {
       elements.titlebarDeviceLogo.src = 'assets/mchose-logo.png';
       elements.titlebarDeviceLogo.style.display = 'inline-block';
     }
-    if (elements.titlebarDeviceName) elements.titlebarDeviceName.textContent = '迈从';
+    if (elements.titlebarDeviceName) elements.titlebarDeviceName.textContent = currentLang === 'en-US' ? 'MCHOSE' : '迈从';
   } else if (brand === 'eweadn') {
     if (elements.titlebarDeviceLogo) {
       elements.titlebarDeviceLogo.src = 'assets/eweadn-logo.png';
       elements.titlebarDeviceLogo.style.display = 'inline-block';
     }
-    if (elements.titlebarDeviceName) elements.titlebarDeviceName.textContent = '前行者';
+    if (elements.titlebarDeviceName) elements.titlebarDeviceName.textContent = currentLang === 'en-US' ? 'EWEADN' : '前行者';
   } else if (brand === 'oppo') {
     if (elements.titlebarDeviceLogo) {
       elements.titlebarDeviceLogo.src = 'assets/oppo-logo.png';
@@ -603,8 +637,16 @@ function openDevice(brand, mode) {
   }
 }
 
+let lastGlobalNavTime = 0;
+const GLOBAL_NAV_DEBOUNCE_MS = 200;
+
 // Smart Global Back Navigation (Used by Back Button, Mouse Button 4, and Escape)
 function handleGlobalNavigateBack() {
+  const now = Date.now();
+  if (now - lastGlobalNavTime < GLOBAL_NAV_DEBOUNCE_MS) {
+    return false;
+  }
+  lastGlobalNavTime = now;
   // 1. If Level-3 confirmation dialog is open, close only Level-3 to smoothly return to Level-2 Settings
   if (elements.confirmBackdrop && elements.confirmBackdrop.classList.contains('visible')) {
     closeConfirmDialog();
@@ -678,6 +720,11 @@ async function backToHome() {
   if (elements.titlebarNavPill) elements.titlebarNavPill.classList.remove('visible');
   if (elements.titlebarHomeBrand) elements.titlebarHomeBrand.style.display = 'flex';
   if (elements.titleText) elements.titleText.textContent = 'UniControl';
+
+  // 【缺陷修复】重新唤醒流体光幕 Canvas 动画循环，避免返回主页后背景冻结
+  if (typeof window._canvasStartRender === 'function') {
+    requestAnimationFrame(() => window._canvasStartRender());
+  }
 }
 
 // Retry webview loader with alternative or fallback URL
@@ -838,10 +885,22 @@ function initDynamicFluidBackground() {
   let t = 0;
   // 【缺陷13修复】使用 rafId 控制动画帧，在不需要渲染时 cancel 而不是继续空转
   let rafId = null;
+  let isWindowFocused = document.hasFocus ? document.hasFocus() : true;
+
+  window.addEventListener('focus', () => {
+    isWindowFocused = true;
+    if (currentView === 'home' && !document.hidden) {
+      startRender();
+    }
+  });
+
+  window.addEventListener('blur', () => {
+    isWindowFocused = false;
+  });
 
   function render() {
-    // Only render canvas animation when on home overview and window is visible
-    if (currentView !== 'home' || document.hidden) {
+    // Only render canvas animation when on home overview, document is visible and window is focused
+    if (currentView !== 'home' || document.hidden || !isWindowFocused) {
       rafId = null; // 标记为已停止，等待唤醒
       return;
     }
@@ -1227,7 +1286,38 @@ window.addEventListener('DOMContentLoaded', () => {
     window.electronAPI.onDeviceRemoved((device) => {
       showToast(`外设已断开: ${device.name}`, '🔌');
     });
+
+    // Tray Menu Direct Device Routing
+    window.electronAPI.onSwitchView?.((target) => {
+      if (target === 'home') {
+        backToHome();
+      } else if (target === 'flydigi') {
+        triggerFlydigiLaunch();
+      } else if (['mchose', 'eweadn', 'oppo'].includes(target)) {
+        openDevice(target);
+      }
+    });
+
+    // Sleep Resume Sync
+    window.electronAPI.onSystemResume?.(() => {
+      if (currentView !== 'home') {
+        const wv = webviews[currentView];
+        if (wv) adaptWebviewSize(wv);
+      }
+      if (typeof window._canvasStartRender === 'function') {
+        window._canvasStartRender();
+      }
+    });
   }
+
+  // Network Connectivity Awareness
+  window.addEventListener('online', () => {
+    showToast(currentLang === 'en-US' ? 'Network reconnected' : '网络已重新连接', '🌐');
+  });
+
+  window.addEventListener('offline', () => {
+    showToast(currentLang === 'en-US' ? 'Network connection offline' : '网络连接已断开，请检查网络', '⚠️');
+  });
 
   // Top action buttons
   elements.btnBack?.addEventListener('click', handleGlobalNavigateBack);
@@ -1359,24 +1449,36 @@ window.addEventListener('DOMContentLoaded', () => {
   initSettingsSegmentedDragControls();
 
   // Mouse Side Button (Button 3 = Back / Button 4 = Forward) on Main Window
+  // 【缺陷修复】增加 250ms 防抖锁与精准事件过滤，防止 pointerup/mouseup/auxclick 连环触发导致一次物理点击执行 3 次后退
+  let lastSideBackTime = 0;
+  let lastSideForwardTime = 0;
+  const SIDE_KEY_DEBOUNCE_MS = 250;
+
   ['pointerdown', 'mousedown', 'mouseup', 'pointerup', 'auxclick'].forEach(evtName => {
     window.addEventListener(evtName, (e) => {
       if (e.button === 3) {
         // Mouse 4th button (Back side button)
         e.preventDefault();
         e.stopPropagation();
-        // Trigger on mouseup/pointerup or auxclick to avoid double firing with mousedown
-        if (evtName === 'pointerup' || evtName === 'mouseup' || evtName === 'auxclick') {
-          handleGlobalNavigateBack();
+        if (evtName === 'pointerup' || evtName === 'auxclick') {
+          const now = Date.now();
+          if (now - lastSideBackTime > SIDE_KEY_DEBOUNCE_MS) {
+            lastSideBackTime = now;
+            handleGlobalNavigateBack();
+          }
         }
       } else if (e.button === 4) {
         // Mouse 5th button (Forward side button)
-        if (evtName === 'pointerup' || evtName === 'mouseup' || evtName === 'auxclick') {
-          if (currentView !== 'home') {
-            const wv = webviews[currentView];
-            if (wv && typeof wv.canGoForward === 'function' && wv.canGoForward()) {
-              wv.goForward();
-              showToast('前进下一页', '➡️');
+        if (evtName === 'pointerup' || evtName === 'auxclick') {
+          const now = Date.now();
+          if (now - lastSideForwardTime > SIDE_KEY_DEBOUNCE_MS) {
+            lastSideForwardTime = now;
+            if (currentView !== 'home') {
+              const wv = webviews[currentView];
+              if (wv && typeof wv.canGoForward === 'function' && wv.canGoForward()) {
+                wv.goForward();
+                showToast('前进下一页', '➡️');
+              }
             }
           }
         }

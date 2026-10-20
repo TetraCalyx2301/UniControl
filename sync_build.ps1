@@ -1,6 +1,7 @@
-Write-Host "=== UniControl 自动化同步与静态校验 ===" -ForegroundColor Cyan
+﻿Write-Host "=== UniControl 自动化同步与静态校验 ===" -ForegroundColor Cyan
+$sw = [System.Diagnostics.Stopwatch]::StartNew()
 
-# 【缺陷12修复】使用 $PSScriptRoot 替代硬编码绝对路径，支持在任意机器/CI 环境运行
+# 【架构规范】使用 $PSScriptRoot 替代硬编码绝对路径，支持在任意机器/CI环境运行
 $root = $PSScriptRoot
 
 # 1. 语法检查
@@ -18,13 +19,13 @@ foreach ($file in $scripts) {
   if (Test-Path $file) {
     $check = node -c $file 2>&1
     if ($LASTEXITCODE -ne 0) {
-      Write-Host "❌ 语法错误: $file" -ForegroundColor Red
+      Write-Host "[ERROR] 语法错误: $file" -ForegroundColor Red
       Write-Host $check
       exit 1
     }
   }
 }
-Write-Host "✔ 语法校验通过！" -ForegroundColor Green
+Write-Host "[OK] 静态语法校验通过!" -ForegroundColor Green
 
 # 2. 同步文件至 resources/app/
 Write-Host "[2/3] 正在同步源码与原生辅助工具至 resources/app 运行环境..." -ForegroundColor Yellow
@@ -48,6 +49,7 @@ node -c "$root\resources\app\src\main\sessionManager.js"
 node -c "$root\resources\app\src\main\dockManager.js"
 node -c "$root\resources\app\src\main\appLauncher.js"
 
+$sw.Stop()
 Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host "🎉 同步完成！所有代码和资源均已无缝就绪。" -ForegroundColor Green
+Write-Host ("[SUCCESS] 同步完成! 所有代码和资源均已就绪 (耗时: {0} ms)." -f $sw.ElapsedMilliseconds) -ForegroundColor Green
 Write-Host "==========================================" -ForegroundColor Cyan

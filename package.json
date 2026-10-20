@@ -1,7 +1,7 @@
 {
   "name": "unicontrol",
   "version": "1.0.0",
-  "description": "UniControl - 统一外设控制中心 (MCHOSE & EWEADN)",
+  "description": "UniControl - 统一外设控制中心 (MCHOSE, EWEADN, OPPO Connect & FLYDIGI)",
   "main": "main.js",
   "scripts": {
     "start": "UniControl.exe .",
@@ -13,8 +13,11 @@
     "peripheral",
     "mchose",
     "eweadn",
+    "oppo",
+    "flydigi",
     "keyboard",
     "mouse",
+    "gamepad",
     "rgb",
     "webhid",
     "electron"

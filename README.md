@@ -1,32 +1,5 @@
 # UniControl
-
-### ![image-20261020125508054](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20261020125508054.png)
-
-
-
-[![Release](https://img.shields.io/badge/Release-v1.0.0-0078D6?style=for-the-badge&logo=github&logoColor=white)](https://github.com)
-[![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011%20(x64)-00a4ef?style=for-the-badge&logo=windows&logoColor=white)](https://github.com)
-[![Electron](https://img.shields.io/badge/Electron-30+-47848F?style=for-the-badge&logo=electron&logoColor=white)](https://www.electronjs.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D%2018.0.0-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
-[![Hardware](https://img.shields.io/badge/Hardware-WebHID%20%7C%20WebUSB-blueviolet?style=for-the-badge&logo=target&logoColor=white)](https://wicg.github.io/webhid/)
-[![Native Dock](https://img.shields.io/badge/Native%20Dock-Win32%20SetParent-00b4d8?style=for-the-badge&logo=windows-terminal&logoColor=white)](#-oppo-随身工作台-win32-原生-docking-原理)
-[![Design](https://img.shields.io/badge/Design-Apple%20Liquid%20Glass-ff9f1c?style=for-the-badge&logo=apple&logoColor=white)](#-uiux-设计语言与动效体系)
-[![License](https://img.shields.io/badge/License-MIT-2ec4b6?style=for-the-badge&logo=open-source-initiative&logoColor=white)](LICENSE)
-
-<br/>
-
-[✨ 核心特性](#-核心功能亮点) •
-[🧩 品牌生态](#-支持的品牌生态) •
-[🏗️ 系统架构](#-系统架构与工作原理解析) •
-[🎨 视觉设计](#-uiux-设计语言与动效体系) •
-[🚀 快速上手](#-快速上手与运行) •
-[📦 打包分发](#-打包与安装包制作) •
-[⌨️ 快捷操作](#-快捷键与交互速查表) •
-[❓ 常见问题](#-常见问题与故障排查-faq)
-
-</div>
-
----
+<img width="1798" height="1150" alt="image" src="https://github.com/user-attachments/assets/6867e97f-b694-48b3-a23f-6b81ee4ea64b" />
 
 ## 📖 项目简介
 

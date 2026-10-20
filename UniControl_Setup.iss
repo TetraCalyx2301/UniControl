@@ -16,7 +16,7 @@ AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\UniControl
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
-OutputDir=d:\System\Desktop
+OutputDir=..
 OutputBaseFilename=UniControl_Setup_v1.0.0
 SetupIconFile={#UniSourceDir}\icon.ico
 Compression=lzma2/normal
@@ -37,6 +37,7 @@ Name: "oppoicon"; Description: "在桌面上创建「OPPO 跨屏互联」快捷�
 [Files]
 ; 1. UniControl Core Application Files
 Source: "{#UniSourceDir}\UniControl.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#UniSourceDir}\OppoDockTool.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#UniSourceDir}\icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#UniSourceDir}\*.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#UniSourceDir}\*.pak"; DestDir: "{app}"; Flags: ignoreversion

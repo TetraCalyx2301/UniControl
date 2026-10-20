@@ -83,3 +83,4 @@ UniControl 遵循严谨的三级交互层次体系：
 | **托盘运行与全局唤醒** | 支持自定义关闭到托盘或直接退出，支持自定义快捷键（默认 `Ctrl + Alt + U`）全局瞬时呼出/隐藏 | `main.js`, IPC `setGlobalShortcut` |
 | **硬件缓存清理** | 三级确认设计，一键清理 Chromium webview 与驱动服务缓存 | IPC `clearCache` |
 | **多品牌驱动容错** | 智能超时检测与离线兜底卡片，支持原节点重试与切换官方备用接入点 | `.webview-fallback`, `retryWebview()` |
+| **安全加固与退出生命周期修复** | 移除全局 SSL 错误绕过；非设备权限严格默认拦截；修复关机卡死；OPPO 双模与 Docking 全链路补齐 | `main.js`, `sessionManager.js`, `dockManager.js`, `src/app.js` |

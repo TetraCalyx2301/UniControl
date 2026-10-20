@@ -27,15 +27,22 @@ foreach ($file in $scripts) {
 Write-Host "✔ 语法校验通过！" -ForegroundColor Green
 
 # 2. 同步文件至 resources/app/
-Write-Host "[2/3] 正在同步源码至 resources/app 运行环境..." -ForegroundColor Yellow
+Write-Host "[2/3] 正在同步源码与原生辅助工具至 resources/app 运行环境..." -ForegroundColor Yellow
+if (-not (Test-Path "$root\resources\app")) {
+  New-Item -ItemType Directory -Path "$root\resources\app" -Force | Out-Null
+}
 Copy-Item -Path "$root\main.js" -Destination "$root\resources\app\main.js" -Force
 Copy-Item -Path "$root\preload.js" -Destination "$root\resources\app\preload.js" -Force
 Copy-Item -Path "$root\package.json" -Destination "$root\resources\app\package.json" -Force
+if (Test-Path "$root\OppoDockTool.exe") {
+  Copy-Item -Path "$root\OppoDockTool.exe" -Destination "$root\resources\app\OppoDockTool.exe" -Force
+}
 Copy-Item -Path "$root\src\*" -Destination "$root\resources\app\src\" -Recurse -Force
 
 # 3. 校验 resources/app 副本
 Write-Host "[3/3] 正在验证运行副本..." -ForegroundColor Yellow
 node -c "$root\resources\app\main.js"
+node -c "$root\resources\app\preload.js"
 node -c "$root\resources\app\src\app.js"
 node -c "$root\resources\app\src\main\sessionManager.js"
 node -c "$root\resources\app\src\main\dockManager.js"

@@ -429,6 +429,115 @@ function showToast(message, icon = '✨') {
   }, 2200);
 }
 
+// ==========================================================================
+// OPPO Mode Switcher & Win32 Native Docking Controller
+// ==========================================================================
+let isOppoDockedInRenderer = false;
+
+function updateOppoModeSegmentedThumb(mode = currentOppoMode) {
+  const container = document.getElementById('oppo-mode-capsule');
+  const thumb = document.getElementById('oppo-mode-slider-thumb');
+  const activeBtn = document.getElementById(`oppo-mode-opt-${mode}`);
+  if (!container || !thumb || !activeBtn) return;
+
+  const leftOffset = Math.round(activeBtn.offsetLeft);
+  thumb.style.transform = `translateX(${leftOffset}px)`;
+  thumb.style.width = `${Math.round(activeBtn.offsetWidth)}px`;
+  thumb.style.opacity = '1';
+}
+
+async function switchOppoMode(mode = 'web') {
+  currentOppoMode = mode;
+  const wv = webviews.oppo;
+  const localDashboard = document.getElementById('oppo-local-dashboard');
+  const btnWeb = document.getElementById('oppo-mode-opt-web');
+  const btnLocal = document.getElementById('oppo-mode-opt-local');
+
+  if (btnWeb && btnLocal) {
+    if (mode === 'web') {
+      btnWeb.classList.add('active');
+      btnLocal.classList.remove('active');
+    } else {
+      btnLocal.classList.add('active');
+      btnWeb.classList.remove('active');
+    }
+  }
+
+  requestAnimationFrame(() => updateOppoModeSegmentedThumb(mode));
+
+  if (mode === 'web') {
+    if (isOppoDockedInRenderer) {
+      await triggerOppoUndock(false);
+    }
+    if (localDashboard) localDashboard.style.display = 'none';
+    if (wv) {
+      wv.style.display = 'flex';
+      if (!wv.getAttribute('src') && wv.getAttribute('data-src')) {
+        wv.setAttribute('src', wv.getAttribute('data-src'));
+      }
+      adaptWebviewSize(wv);
+    }
+  } else {
+    if (wv) wv.style.display = 'none';
+    if (localDashboard) localDashboard.style.display = 'flex';
+  }
+}
+
+async function triggerOppoDock() {
+  const isEn = currentLang === 'en-US';
+  const statusEl = document.getElementById('oppo-dock-status');
+  const btnDock = document.getElementById('btn-dock-oppo');
+  const btnUndock = document.getElementById('btn-undock-oppo');
+
+  if (statusEl) statusEl.textContent = isEn ? 'Status: Detecting OPPO window...' : '状态：正在探测并嵌入 OPPO 窗口...';
+  showToast(isEn ? 'Docking OPPO window...' : '正在嵌入 OPPO 跨屏互联窗口...', '📌');
+
+  if (window.electronAPI && typeof window.electronAPI.dockOppoWindow === 'function') {
+    const mainViewport = document.querySelector('.main-viewport');
+    const rect = mainViewport ? mainViewport.getBoundingClientRect() : { x: 0, y: 46, width: 1440, height: 874 };
+    const res = await window.electronAPI.dockOppoWindow({
+      x: Math.round(rect.x || 0),
+      y: Math.round(rect.y || 46),
+      width: Math.round(rect.width || 1440),
+      height: Math.round(rect.height || 874)
+    });
+
+    if (res && res.success) {
+      isOppoDockedInRenderer = true;
+      if (statusEl) statusEl.textContent = isEn ? 'Status: Docked successfully' : '状态：已成功嵌入当前视口';
+      if (btnDock) btnDock.style.display = 'none';
+      if (btnUndock) btnUndock.style.display = 'inline-flex';
+      showToast(isEn ? 'OPPO window docked' : 'OPPO 跨屏互联已嵌入中控', '✅');
+    } else {
+      isOppoDockedInRenderer = false;
+      if (statusEl) statusEl.textContent = isEn ? 'Status: OPPO window not found' : '状态：未检测到运行中的 OPPO 窗口';
+      showToast(isEn ? 'Could not find running OPPO window. Please launch it first.' : '未检测到运行中的 OPPO 客户端，请先唤起程序', '⚠️');
+    }
+  }
+}
+
+async function triggerOppoUndock(showNotification = true) {
+  const isEn = currentLang === 'en-US';
+  const statusEl = document.getElementById('oppo-dock-status');
+  const btnDock = document.getElementById('btn-dock-oppo');
+  const btnUndock = document.getElementById('btn-undock-oppo');
+
+  if (window.electronAPI && typeof window.electronAPI.undockOppoWindow === 'function') {
+    try {
+      await window.electronAPI.undockOppoWindow();
+    } catch (_) {}
+  }
+
+  isOppoDockedInRenderer = false;
+  if (statusEl) statusEl.textContent = isEn ? 'Status: Ready / Undocked' : '状态：就绪 / 未嵌入';
+  if (btnDock) btnDock.style.display = 'inline-flex';
+  if (btnUndock) btnUndock.style.display = 'none';
+
+  if (showNotification) {
+    showToast(isEn ? 'OPPO window restored' : '已还原 OPPO 独立窗口', '🔄');
+  }
+}
+
 // Open Device View with smooth animation
 function openDevice(brand, mode) {
   if (!views[brand]) return;
@@ -542,14 +651,12 @@ function handleGlobalNavigateBack() {
 // Return to Home Selection
 // 【缺陷6修复】如果 OPPO 处于本地 Dock 模式，返回前先执行 undock，防止 Win32 窗口残留叠加
 async function backToHome() {
-  // 若当前是 OPPO 本地模式且已 Dock，先异步 undock
-  if (currentView === 'oppo' && currentOppoMode === 'local') {
-    if (window.electronAPI && typeof window.electronAPI.undockOppoWindow === 'function') {
-      try {
-        await window.electronAPI.undockOppoWindow();
-      } catch (e) {
-        console.warn('[backToHome] undockOppoWindow error:', e);
-      }
+  // 若当前是 OPPO 本地模式且已 Dock，先异步 undock 释放 Win32 窗口
+  if (currentView === 'oppo') {
+    try {
+      await triggerOppoUndock(false);
+    } catch (e) {
+      console.warn('[backToHome] triggerOppoUndock error:', e);
     }
   }
 
@@ -644,7 +751,10 @@ window.handleGlobalNavigateBack = handleGlobalNavigateBack;
 window.reloadCurrentView = reloadCurrentView;
 window.retryWebview = retryWebview;
 window.triggerOppoLaunch = triggerOppoLaunch;
-window.triggerFlydigiLaunch = triggerFlydigiLaunch; // 与 triggerOppoLaunch 保持一致，提前挂载
+window.triggerFlydigiLaunch = triggerFlydigiLaunch;
+window.switchOppoMode = switchOppoMode;
+window.triggerOppoDock = triggerOppoDock;
+window.triggerOppoUndock = triggerOppoUndock;
 
 // Zoom Management (Adapts both Home Overview & Device Webviews)
 function applyZoom(delta) {

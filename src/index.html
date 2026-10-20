@@ -73,12 +73,24 @@
             <span id="titlebar-device-name">迈从</span>
           </div>
 
-          <!-- OPPO Quick Wake Button in Titlebar -->
+          <!-- OPPO Dual Mode & Quick Wake in Titlebar -->
           <div class="oppo-titlebar-wake-wrap" id="oppo-titlebar-wake-wrap" style="display: none;">
+            <div class="floating-divider"></div>
+            <div class="oppo-mode-capsule" id="oppo-mode-capsule">
+              <div class="oppo-mode-slider-thumb" id="oppo-mode-slider-thumb"></div>
+              <button class="oppo-mode-btn active" id="oppo-mode-opt-web" onclick="switchOppoMode('web')" title="切换为免安装云端工作台">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                <span class="i18n-oppo-mode-web">云端工作台</span>
+              </button>
+              <button class="oppo-mode-btn" id="oppo-mode-opt-local" onclick="switchOppoMode('local')" title="切换为本地客户端联动与嵌入">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                <span class="i18n-oppo-mode-local">本地跨屏</span>
+              </button>
+            </div>
             <div class="floating-divider"></div>
             <button class="btn-floating-action" id="btn-oppo-wake-local" onclick="triggerOppoLaunch()" title="唤起官方 OPPO 跨屏互联客户端" aria-label="唤起本地跨屏互联">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-              <span>唤起本地跨屏互联</span>
+              <span>唤起客户端</span>
             </button>
           </div>
         </div>
@@ -296,8 +308,55 @@
         partition="persist:unicontrol_profile"
         allowpopups="true">
       </webview>
-    </section>
 
+      <!-- Local Connected Mode Dashboard -->
+      <div class="oppo-local-dashboard" id="oppo-local-dashboard" style="display: none;">
+        <div class="oppo-dashboard-layout">
+          <div class="oppo-panel-card">
+            <div class="oppo-profile-bar">
+              <div class="oppo-avatar-wrap">
+                <div class="oppo-avatar">OP</div>
+                <div class="oppo-status-online-dot"></div>
+              </div>
+              <div class="oppo-profile-info">
+                <div class="oppo-user-name">OPPO 跨屏互联</div>
+                <div class="oppo-user-id" id="oppo-dock-status">状态：就绪 / 未嵌入</div>
+              </div>
+              <div class="oppo-brand-badge">
+                <img src="assets/oppo-logo.png" alt="OPPO" class="oppo-badge-mini">
+              </div>
+            </div>
+            <div class="oppo-section-title">
+              <span>本地客户端协同</span>
+              <div class="oppo-scan-pulse">
+                <span class="pulse-ring"></span>
+                <span>Native Bridge</span>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+              <button class="btn-fallback-primary" onclick="triggerOppoLaunch()" style="justify-content: center;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                <span>唤起本地跨屏互联</span>
+              </button>
+              <button class="btn-fallback-secondary" id="btn-dock-oppo" onclick="triggerOppoDock()" style="justify-content: center;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                <span>嵌入当前中控视口 (Dock)</span>
+              </button>
+              <button class="btn-fallback-secondary" id="btn-undock-oppo" onclick="triggerOppoUndock()" style="justify-content: center; display: none;">
+                <span>还原窗口解除嵌入 (Undock)</span>
+              </button>
+            </div>
+          </div>
+          <div class="oppo-panel-card">
+            <div class="oppo-section-title">
+              <span>多设备互联指引</span>
+            </div>
+            <p style="font-size: 13px; line-height: 1.6; color: var(--text-secondary); margin: 0;">
+              UniControl 支持通过 Win32 原生协议将官方「OPPO 跨屏互联」无缝挂载至统一视口中。首次使用请确保已安装 OPPO 官方客户端并在“设置”中配置路径，手机靠近即可自动发现与投屏。
+            </p>
+          </div>
+        </div>
+      </div>
     </section>
   </main>
 

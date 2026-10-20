@@ -53,29 +53,28 @@ function configurePeripheralSession(targetSession, getMainWindow) {
     callback(isLocal ? 0 : -2);
   });
 
-  // Strip frame-blocking and CSP headers only for trusted vendor webviews
+  // Strip frame-blocking and CSP headers only for trusted vendor webviews (case-insensitive)
   targetSession.webRequest.onHeadersReceived((details, callback) => {
     const responseHeaders = { ...details.responseHeaders };
     if (isTrustedUrl(details.url)) {
-      delete responseHeaders['x-frame-options'];
-      delete responseHeaders['X-Frame-Options'];
-      delete responseHeaders['content-security-policy'];
-      delete responseHeaders['Content-Security-Policy'];
-      delete responseHeaders['content-security-policy-report-only'];
+      const strippedKeys = ['x-frame-options', 'content-security-policy', 'content-security-policy-report-only'];
+      Object.keys(responseHeaders).forEach(header => {
+        if (strippedKeys.includes(header.toLowerCase())) {
+          delete responseHeaders[header];
+        }
+      });
     }
     callback({ cancel: false, responseHeaders });
   });
 
-  // 【缺陷2修复】权限检查：仅对来自受信白名单域名的请求自动授权
-  // 原代码对所有来源无条件返回 true，导致摄像头/麦克风等权限全面开放
+  // 【缺陷2与安全加固】权限检查：仅对来自受信白名单域名的外设请求（HID/USB/Serial）自动授权
+  // 摄像头、麦克风、地理位置、系统通知等非外设敏感权限一律默认拒绝，防止恶意内嵌脚本滥用隐私
   const DEVICE_PERMISSIONS = new Set(['hid', 'usb', 'serial']);
   targetSession.setPermissionCheckHandler((webContents, permission, requestingOrigin) => {
-    // HID/USB/Serial 设备权限：仅白名单域名可获得
     if (DEVICE_PERMISSIONS.has(permission)) {
       return isTrustedUrl(requestingOrigin);
     }
-    // 其余敏感权限（摄像头、麦克风、通知等）严格限制为受信域名
-    return isTrustedUrl(requestingOrigin);
+    return false;
   });
 
   targetSession.setDevicePermissionHandler((details) => {

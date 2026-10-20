@@ -10,6 +10,8 @@ const { screen } = require('electron');
 const path = require('path');
 const { execFile } = require('child_process');
 
+const fs = require('fs');
+
 // 顶栏高度常量：与渲染层 CSS --titlebar-height 保持一致
 // 如需修改顶栏高度，只需改此处，dockManager 自动同步
 const DEFAULT_TITLEBAR_HEIGHT = 46;
@@ -17,10 +19,26 @@ const DEFAULT_TITLEBAR_HEIGHT = 46;
 class DockManager {
   constructor(getMainWindow, titlebarHeight = DEFAULT_TITLEBAR_HEIGHT) {
     this.getMainWindow = getMainWindow;
-    this.oppoDockTool = path.join(__dirname, '..', '..', 'OppoDockTool.exe');
+    this.oppoDockTool = this.resolveDockTool();
     this.isOppoDocked = false;
     this.resizeDebounceTimer = null;
     this.titlebarHeight = titlebarHeight;
+  }
+
+  /**
+   * 智能探测 OppoDockTool.exe 在各种部署环境下的实际路径
+   */
+  resolveDockTool() {
+    const candidates = [
+      path.join(__dirname, '..', '..', 'OppoDockTool.exe'),
+      path.join(process.resourcesPath || '', 'app', 'OppoDockTool.exe'),
+      path.join(process.resourcesPath || '', 'OppoDockTool.exe'),
+      path.join(__dirname, '..', '..', '..', 'OppoDockTool.exe'),
+    ];
+    for (const c of candidates) {
+      if (c && fs.existsSync(c)) return c;
+    }
+    return path.join(__dirname, '..', '..', 'OppoDockTool.exe');
   }
 
   /**
@@ -37,7 +55,15 @@ class DockManager {
     const win = this.getMainWindow();
     if (!win || win.isDestroyed()) return '0';
     const buf = win.getNativeWindowHandle();
-    return buf.readBigInt64LE ? buf.readBigInt64LE(0).toString() : buf.readUInt32LE(0).toString();
+    // 使用 readBigUInt64LE 避免 64 位窗口句柄符号位翻转为负数导致外部工具转换溢出
+    if (typeof buf.readBigUInt64LE === 'function') {
+      return buf.readBigUInt64LE(0).toString();
+    }
+    if (typeof buf.readBigInt64LE === 'function') {
+      const val = buf.readBigInt64LE(0);
+      return BigInt.asUintN(64, val).toString();
+    }
+    return buf.readUInt32LE(0).toString();
   }
 
   getDpiScale() {

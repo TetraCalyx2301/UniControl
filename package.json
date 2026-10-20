@@ -1,0 +1,24 @@
+{
+  "name": "unicontrol",
+  "version": "1.0.0",
+  "description": "UniControl - 统一外设控制中心 (MCHOSE & EWEADN)",
+  "main": "main.js",
+  "scripts": {
+    "start": "UniControl.exe .",
+    "sync": "powershell -ExecutionPolicy Bypass -File ./sync_build.ps1",
+    "build": "powershell -ExecutionPolicy Bypass -File ./sync_build.ps1"
+  },
+  "keywords": [
+    "unicontrol",
+    "peripheral",
+    "mchose",
+    "eweadn",
+    "keyboard",
+    "mouse",
+    "rgb",
+    "webhid",
+    "electron"
+  ],
+  "author": "UniControl Team",
+  "license": "MIT"
+}

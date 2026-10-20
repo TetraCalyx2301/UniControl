@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UniControl</title>
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+  <!-- Apple Optical Liquid Glass SVG Filters -->
+  <svg style="position: absolute; width: 0; height: 0; overflow: hidden;" aria-hidden="true">
+    <defs>
+      <filter id="liquid-refract" x="-10%" y="-10%" width="120%" height="120%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="1" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="2" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- Ambient Dynamic Fluid Aurora Background -->
+  <div class="ambient-glow-wrapper" aria-hidden="true">
+    <canvas id="ambient-dynamic-canvas" class="ambient-dynamic-canvas"></canvas>
+    <div class="glow-orb orb-cyan"></div>
+    <div class="glow-orb orb-purple"></div>
+    <div class="glow-orb orb-deep-blue"></div>
+    <div class="glow-orb orb-violet-pulse"></div>
+    <div class="glow-mesh"></div>
+    <div class="fluid-wave-layer"></div>
+  </div>
+
+  <!-- Titlebar with Apple 3-Color Window Chrome -->
+  <header class="titlebar">
+    <div class="titlebar-left">
+      <!-- Apple Window Controls: Functional Close, Min, Max -->
+      <div class="apple-window-controls" id="window-dots-group">
+        <button class="apple-dot dot-close" id="btn-win-close" title="关闭 (退出应用)">
+          <svg viewBox="0 0 10 10"><path d="M1 1L9 9M9 1L1 9"/></svg>
+        </button>
+        <button class="apple-dot dot-min" id="btn-win-min" title="最小化到任务栏">
+          <svg viewBox="0 0 10 10"><path d="M1 5h8"/></svg>
+        </button>
+        <button class="apple-dot dot-max" id="btn-win-max" title="最大化 / 还原窗口">
+          <svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="3.2" fill="none"/></svg>
+        </button>
+      </div>
+
+
+
+      <!-- App Brand & Unified Navigation Center -->
+      <div class="titlebar-center">
+        <!-- Home State: App Logo & Brand Name -->
+        <div class="app-logo-badge" id="titlebar-home-brand">
+          <img src="assets/icon.png" alt="UniControl Logo" class="brand-mini-icon">
+          <span id="titlebar-brand-title">UniControl</span>
+        </div>
+
+        <!-- Device State: Back & Reload Pill + Brand Logo -->
+        <div class="titlebar-nav-pill" id="titlebar-nav-pill">
+          <button class="btn-floating-action" id="btn-floating-back" onclick="handleGlobalNavigateBack();" title="返回概览 (鼠标侧键 / Esc)" aria-label="返回">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            <span class="i18n-back">返回</span>
+          </button>
+          <div class="floating-divider"></div>
+          <button class="btn-floating-action" onclick="reloadCurrentView()" title="刷新驱动" aria-label="刷新">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            <span class="i18n-reload">刷新</span>
+          </button>
+          <div class="floating-divider"></div>
+          <div class="titlebar-brand-tag">
+            <div class="titlebar-device-logo-wrap">
+              <img src="assets/mchose-logo.png" alt="Brand Logo" class="titlebar-device-logo" id="titlebar-device-logo">
+            </div>
+            <span id="titlebar-device-name">迈从</span>
+          </div>
+
+          <!-- OPPO Quick Wake Button in Titlebar -->
+          <div class="oppo-titlebar-wake-wrap" id="oppo-titlebar-wake-wrap" style="display: none;">
+            <div class="floating-divider"></div>
+            <button class="btn-floating-action" id="btn-oppo-wake-local" onclick="triggerOppoLaunch()" title="唤起官方 OPPO 跨屏互联客户端" aria-label="唤起本地跨屏互联">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              <span>唤起本地跨屏互联</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Titlebar Right Controls -->
+    <div class="titlebar-right">
+      <div class="liquid-pill-badge" id="status-pill">
+        <span class="status-dot"></span>
+        <span>WebHID 直通</span>
+      </div>
+
+      <!-- Integrated Apple Glass Zoom Capsule -->
+      <div class="zoom-control-group" id="zoom-control-group" title="滚轮上下滑动调整缩放，点击数字重置 100%">
+        <button class="zoom-btn" id="btn-zoom-out" title="缩小 (Ctrl -)" aria-label="缩小">
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M2 8a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 8z"/></svg>
+        </button>
+        <span class="zoom-indicator" id="zoom-text" title="滚轮上下滑动调整缩放，点击重置 100%">100%</span>
+        <button class="zoom-btn" id="btn-zoom-in" title="放大 (Ctrl +)" aria-label="放大">
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2z"/></svg>
+        </button>
+      </div>
+
+      <button class="liquid-icon-btn" id="btn-reload" title="刷新驱动 (Ctrl+R)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      </button>
+
+      <!-- Unified Settings Panel Button -->
+      <button class="liquid-icon-btn" id="btn-open-settings" title="通用设置">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+
+      <button class="liquid-icon-btn" id="btn-devtools" title="开发者工具 (F12)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Viewport -->
+  <main class="main-viewport">
+    <!-- 1. Home View: Clean Brand Title & Refined Cards -->
+    <section class="view-container home-view active" id="view-home">
+      <!-- Minimalist Brand Hero: ONLY Brand Name -->
+      <div class="home-header">
+        <div class="brand-hero">
+          <div class="hero-icon-container">
+            <img src="assets/icon.png" alt="UniControl" class="hero-icon-img">
+            <div class="hero-icon-glow"></div>
+          </div>
+          <h1 class="brand-title-text">UniControl</h1>
+        </div>
+      </div>
+
+      <!-- DUAL DEVICE CARDS (MCHOSE: Cyan Blue | EWEADN: Deep Violet Purple) -->
+      <div class="dual-device-grid">
+        <!-- Button 1: MCHOSE Card (Cyan/Blue Theme) -->
+        <div class="device-card card-mchose-theme" id="card-mchose" onclick="openDevice('mchose')">
+          <div class="liquid-sheen-layer"></div>
+          
+          <div class="card-brand-header">
+            <div class="brand-badge-icon icon-mchose">
+              <img src="assets/mchose-logo.png" alt="MCHOSE Logo" class="brand-logo-img">
+            </div>
+          </div>
+
+          <div class="card-title">迈从 (MCHOSE)</div>
+
+          <!-- Sleek Centered Oval Arrow Action Button -->
+          <div class="card-arrow-action">
+            <button class="btn-enter-device btn-enter-mchose" aria-label="进入迈从">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Button 2: EWEADN Card (Electric Violet Theme, NOT green) -->
+        <div class="device-card card-eweadn-theme" id="card-eweadn" onclick="openDevice('eweadn')">
+          <div class="liquid-sheen-layer"></div>
+
+          <div class="card-brand-header">
+            <div class="brand-badge-icon icon-eweadn">
+              <img src="assets/eweadn-logo.png" alt="EWEADN Logo" class="brand-logo-img eweadn-img">
+            </div>
+          </div>
+
+          <div class="card-title">前行者 (EWEADN)</div>
+
+          <!-- Sleek Centered Oval Arrow Action Button -->
+          <div class="card-arrow-action">
+            <button class="btn-enter-device btn-enter-eweadn" aria-label="进入前行者">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Button 3: OPPO Connect Card (Emerald Green & Tech Blue Theme) -->
+        <div class="device-card card-oppo-theme" id="card-oppo" onclick="openDevice('oppo')">
+          <div class="liquid-sheen-layer"></div>
+
+          <div class="card-brand-header">
+            <div class="brand-badge-icon icon-oppo">
+              <img src="assets/oppo-logo.png" alt="OPPO Connect Logo" class="brand-logo-img oppo-img">
+            </div>
+          </div>
+
+          <div class="card-title">OPPO 随身工作台</div>
+
+          <!-- Dual Action Selector: Cloud vs Local Direct Wakeup -->
+          <div class="card-dual-action" onclick="event.stopPropagation()">
+            <button class="btn-card-mode btn-card-mode-web" onclick="openDevice('oppo'); event.stopPropagation();">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              <span class="i18n-oppo-card-web">云端</span>
+            </button>
+            <button class="btn-card-mode btn-card-mode-local" onclick="triggerOppoLaunch(); event.stopPropagation();">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              <span class="i18n-oppo-card-local">本地</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Button 4: FLYDIGI Card (Cyber Ice-Blue Theme) -->
+        <div class="device-card card-flydigi-theme" id="card-flydigi" onclick="triggerFlydigiLaunch()">
+          <div class="liquid-sheen-layer"></div>
+
+          <div class="card-brand-header">
+            <div class="brand-badge-icon icon-flydigi">
+              <img src="assets/flydigi-logo.png" alt="Flydigi Logo" class="brand-logo-img flydigi-img">
+            </div>
+          </div>
+
+          <div class="card-title">飞智 (FLYDIGI)</div>
+
+          <!-- Sleek Centered Oval Arrow Action Button (Consistent with MCHOSE & EWEADN) -->
+          <div class="card-arrow-action">
+            <button class="btn-enter-device btn-enter-flydigi" aria-label="进入飞智空间站">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. MCHOSE Full Screen View -->
+    <section class="view-container device-viewport" id="view-mchose">
+      <div class="apple-progress-bar" id="progress-mchose"></div>
+      
+      <!-- Fallback Error Overlay with Retry / Alternate node -->
+      <div class="webview-fallback" id="fallback-mchose">
+        <div class="fallback-card">
+          <div class="fallback-icon">⚠️</div>
+          <div class="fallback-title i18n-mchose-fail-title">迈从驱动加载超时或响应异常</div>
+          <div class="fallback-desc i18n-mchose-fail-desc">可能由于网络波动或官方服务器策略拦截，点击下方按钮重试或切换官方备用接入点。</div>
+          <div class="fallback-actions">
+            <button class="btn-fallback-primary" onclick="retryWebview('mchose', 'https://www.mchose.com.cn/#/detail')">重新加载原节点</button>
+            <button class="btn-fallback-secondary" onclick="retryWebview('mchose', 'https://www.mchose.com.cn/')">切换官方入口节点</button>
+          </div>
+        </div>
+      </div>
+
+      <webview id="webview-mchose"
+        class="device-webview"
+        data-src="https://www.mchose.com.cn/#/detail"
+        partition="persist:unicontrol_profile"
+        allowpopups="true">
+      </webview>
+    </section>
+
+    <!-- 3. EWEADN Full Screen View -->
+    <section class="view-container device-viewport" id="view-eweadn">
+      <div class="apple-progress-bar" id="progress-eweadn"></div>
+
+      <!-- Fallback Error Overlay with Retry / Alternate node -->
+      <div class="webview-fallback" id="fallback-eweadn">
+        <div class="fallback-card">
+          <div class="fallback-icon">⚠️</div>
+          <div class="fallback-title i18n-eweadn-fail-title">前行者驱动加载超时或响应异常</div>
+          <div class="fallback-desc i18n-eweadn-fail-desc">可能由于新版驱动服务器网络波动，点击下方按钮重试或切换官方备用服务节点。</div>
+          <div class="fallback-actions">
+            <button class="btn-fallback-primary" onclick="retryWebview('eweadn', 'https://new-hub.eweadn.cn/keyboard-management/lighting')">重新加载灯效配置页</button>
+            <button class="btn-fallback-secondary" onclick="retryWebview('eweadn', 'https://new-hub.eweadn.cn/')">切换前行者官方首页</button>
+          </div>
+        </div>
+      </div>
+
+      <webview id="webview-eweadn"
+        class="device-webview"
+        data-src="https://new-hub.eweadn.cn/keyboard-management/lighting"
+        partition="persist:unicontrol_profile"
+        allowpopups="true">
+      </webview>
+    </section>
+
+    <!-- 5. OPPO Full Screen View (Oppo Connect / 随身工作台 · 线上 & 本地双模) -->
+    <section class="view-container device-viewport" id="view-oppo">
+      <div class="apple-progress-bar" id="progress-oppo"></div>
+
+      <!-- Fallback Error Overlay with Retry / Alternate node -->
+      <div class="webview-fallback" id="fallback-oppo">
+        <div class="fallback-card">
+          <div class="fallback-icon">📱</div>
+          <div class="fallback-title">OPPO 随身工作台云端连接超时</div>
+          <div class="fallback-desc">网络连接可能存在延迟，您可以重新加载云端节点，或直接唤起本地客户端。</div>
+          <div class="fallback-actions">
+            <button class="btn-fallback-primary" onclick="retryWebview('oppo', 'https://cloud.heytap.com')">重新加载云端</button>
+            <button class="btn-fallback-secondary" onclick="triggerOppoLaunch()">唤起本地跨屏互联</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Online Cloud Webview -->
+      <webview id="webview-oppo"
+        class="device-webview"
+        data-src="https://cloud.heytap.com"
+        partition="persist:unicontrol_profile"
+        allowpopups="true">
+      </webview>
+    </section>
+
+    </section>
+  </main>
+
+  <!-- Settings Modal (Apple Liquid Glass) -->
+  <div class="settings-modal-backdrop" id="settings-backdrop">
+    <div class="settings-modal-card" id="settings-card">
+      <div class="settings-modal-header">
+        <button class="settings-apple-close" id="btn-close-settings" title="关闭设置">
+          <svg viewBox="0 0 10 10"><path d="M1 1L9 9M9 1L1 9"/></svg>
+        </button>
+        <div class="settings-title-group">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <h2>UniControl 设置</h2>
+        </div>
+        <div style="width: 14px;"></div>
+      </div>
+
+      <div class="settings-modal-body">
+        <!-- Setting 1: Theme Mode Selection -->
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-label">外观主题</span>
+          </div>
+          <div class="theme-segmented-control apple-segmented-capsule" id="theme-segmented">
+            <div class="segmented-slider-thumb" id="theme-slider-thumb"></div>
+            <button class="segment-btn" data-theme-val="system" id="theme-opt-system">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              <span>跟随系统</span>
+            </button>
+            <button class="segment-btn" data-theme-val="light" id="theme-opt-light">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              <span>白色</span>
+            </button>
+            <button class="segment-btn" data-theme-val="dark" id="theme-opt-dark">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              <span>暗色</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Setting 2: Language Selection (Chinese / English) -->
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-label" id="lbl-setting-lang">界面语言</span>
+          </div>
+          <div class="theme-segmented-control apple-segmented-capsule" id="lang-segmented">
+            <div class="segmented-slider-thumb" id="lang-slider-thumb"></div>
+            <button class="segment-btn active" data-lang-val="zh-CN" id="lang-opt-zh">
+              <span>简体中文</span>
+            </button>
+            <button class="segment-btn" data-lang-val="en-US" id="lang-opt-en">
+              <span>English</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Setting 2: Close to Tray Behavior -->
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-label">关闭主窗口时后台运行</span>
+          </div>
+          <label class="apple-switch">
+            <input type="checkbox" id="chk-close-tray" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <!-- Setting 3: Auto Launch at System Startup -->
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-label" id="lbl-setting-autolaunch">开机自启动</span>
+            <span class="setting-sublabel" id="sublbl-setting-autolaunch">系统启动时自动在后台托盘静默运行</span>
+          </div>
+          <label class="apple-switch">
+            <input type="checkbox" id="chk-auto-launch">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <!-- Setting 4: Background Global Wake Shortcut -->
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-label" id="lbl-setting-shortcut">后台呼出快捷键</span>
+          </div>
+          <div class="shortcut-recorder-box" id="shortcut-recorder-box">
+            <button class="shortcut-key-btn" id="btn-shortcut-record" title="点击后按下键盘组合键设置">
+              <span class="shortcut-key-text" id="shortcut-display-text">Ctrl + Alt + U</span>
+            </button>
+            <button class="btn-shortcut-reset" id="btn-shortcut-reset" title="恢复默认快捷键">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Setting 4: OPPO Local Client Path -->
+        <div class="setting-item setting-path-item">
+          <div class="setting-info">
+            <span class="setting-label" id="lbl-setting-oppo-path">OPPO 客户端路径</span>
+            <span class="setting-sublabel" id="sublbl-setting-oppo-path">自定义唤起本地 OPPO 跨屏互联程序 (.exe)</span>
+          </div>
+          <div class="path-input-group">
+            <input type="text" class="apple-glass-input" id="input-oppo-path" placeholder="留空则自动探测常见安装路径..." spellcheck="false">
+            <button class="btn-path-browse" id="btn-browse-oppo-path" title="浏览文件">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              <span>浏览</span>
+            </button>
+            <button class="btn-path-reset" id="btn-reset-oppo-path" title="重置路径">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Setting 5: Flydigi PC Space Path -->
+        <div class="setting-item setting-path-item">
+          <div class="setting-info">
+            <span class="setting-label" id="lbl-setting-flydigi-path">飞智空间站路径</span>
+            <span class="setting-sublabel" id="sublbl-setting-flydigi-path">自定义唤起及嵌入飞智 PC 空间站程序 (.exe)</span>
+          </div>
+          <div class="path-input-group">
+            <input type="text" class="apple-glass-input" id="input-flydigi-path" placeholder="留空则自动探测常见安装路径..." spellcheck="false">
+            <button class="btn-path-browse" id="btn-browse-flydigi-path" title="浏览文件">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              <span>浏览</span>
+            </button>
+            <button class="btn-path-reset" id="btn-reset-flydigi-path" title="重置路径">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Setting 6: Clear Driver Cache -->
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-label" id="lbl-setting-cache">清理驱动缓存</span>
+          </div>
+          <button class="btn-setting-action" id="btn-settings-clear-cache">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            <span>立即清理</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Level-3 Dialog: Apple Liquid Glass Confirm Modal -->
+  <div class="confirm-modal-backdrop" id="confirm-backdrop">
+    <div class="confirm-modal-card" id="confirm-card">
+      <div class="confirm-modal-header">
+        <button class="settings-apple-close" id="btn-cancel-confirm-dot" title="取消并关闭">
+          <svg viewBox="0 0 10 10"><path d="M1 1L9 9M9 1L1 9"/></svg>
+        </button>
+        <div class="confirm-title-group">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span class="confirm-title-text">清理驱动缓存</span>
+        </div>
+        <div style="width: 14px;"></div>
+      </div>
+
+      <div class="confirm-modal-body">
+        <div class="confirm-message-text">确定要清理所有驱动临时缓存与会话存储吗？</div>
+        <div class="confirm-actions-row">
+          <button class="btn-confirm-action btn-confirm-cancel" id="btn-confirm-cancel">取消</button>
+          <button class="btn-confirm-action btn-confirm-ok" id="btn-confirm-ok">立即清理</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Apple Liquid Glass Toast Notification -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

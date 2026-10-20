@@ -30,10 +30,9 @@ if (!gotTheLock) {
 }
 
 // Essential chromium flags for WebHID/WebUSB stability
-app.commandLine.appendSwitch('ignore-certificate-errors');
+// 【安全加固】移除全局 ignore-certificate-errors，避免 MITM 中间人攻击风险；仅保留 session 层的 localhost 精准豁免
 app.commandLine.appendSwitch('allow-insecure-localhost');
 app.commandLine.appendSwitch('enable-features', 'WebHID,WebUSB,WebSerial');
-app.commandLine.appendSwitch('disable-site-isolation-trials');
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
 let mainWindow = null;
@@ -488,6 +487,8 @@ app.whenReady().then(() => {
 });
 
 app.on('before-quit', () => {
+  // 【缺陷修复】确保应用完全退出，避免 Windows 关机/注销或 app.quit() 时被 close 事件的 preventDefault 拦截导致卡死
+  isQuitting = true;
   dockManager.cleanup();
 });
 
